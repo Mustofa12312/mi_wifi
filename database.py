@@ -34,27 +34,55 @@ def init_db():
         )
     ''')
     
-    # insert dummy data for testing if empty
-    c.execute('SELECT COUNT(*) FROM devices')
-    if c.fetchone()[0] == 0:
-        now = datetime.now()
-        devices = [
-            ('192.168.1.1', 'A1:B2:C3:D4:E5:F6', 'Fiberhome', 'Router', now, now, 1),
-            ('192.168.1.3', '4C:C6:4C:A8:2A:E6', 'Xiaomi', 'Mi Wi-Fi Range Extender Pro', now, now, 1),
-            ('192.168.1.64', '00:1A:2B:3C:4D:5E', 'Ubuntu', 'Server-R03', now, now, 1),
-            ('192.168.1.45', 'AA:BB:CC:DD:EE:FF', 'Apple', 'Mustofa-iPhone', now, now, 0)
-        ]
-        c.executemany('''
-            INSERT INTO devices (ip, mac, vendor, hostname, first_seen, last_seen, online)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', devices)
-        
-        c.execute('SELECT id FROM devices')
-        for row in c.fetchall():
-            c.execute('INSERT INTO ping_history (device_id, latency, created_at) VALUES (?, ?, ?)', (row['id'], 2.5, now))
+    # Set all devices offline on startup
+    c.execute('UPDATE devices SET online = 0')
     
     conn.commit()
     conn.close()
+
+def update_device(ip, mac, vendor, hostname, is_online):
+    conn = get_db_connection()
+    c = conn.cursor()
+    now = datetime.now()
+    
+    c.execute('SELECT id FROM devices WHERE mac = ? OR ip = ?', (mac, ip))
+    device = c.fetchone()
+    
+    if device:
+        # Update existing
+        c.execute('''
+            UPDATE devices 
+            SET ip = ?, mac = ?, vendor = ?, hostname = ?, last_seen = ?, online = ?
+            WHERE id = ?
+        ''', (ip, mac, vendor, hostname, now, 1 if is_online else 0, device['id']))
+    else:
+        # Insert new
+        if is_online:
+            c.execute('''
+                INSERT INTO devices (ip, mac, vendor, hostname, first_seen, last_seen, online)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (ip, mac, vendor, hostname, now, now, 1))
+            
+    conn.commit()
+    conn.close()
+
+def add_ping_record(device_id, latency):
+    if latency is None:
+        return
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('INSERT INTO ping_history (device_id, latency, created_at) VALUES (?, ?, ?)',
+              (device_id, latency, datetime.now()))
+    conn.commit()
+    conn.close()
+
+def set_all_offline():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('UPDATE devices SET online = 0')
+    conn.commit()
+    conn.close()
+
 
 if __name__ == '__main__':
     init_db()
