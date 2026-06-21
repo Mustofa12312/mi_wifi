@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="header-title mb-0">Dashboard Overview</h2>
+    <span class="text-muted"><i class="bi bi-clock"></i> Last updated: Just now</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-title">Online Devices</div>
+                    <div class="stat-value text-success">{{ stats.online_devices }}</div>
+                </div>
+                <div class="stat-icon text-success"><i class="bi bi-wifi"></i></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-title">Offline Devices</div>
+                    <div class="stat-value text-danger">{{ stats.offline_devices }}</div>
+                </div>
+                <div class="stat-icon text-danger"><i class="bi bi-wifi-off"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card xiaomi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-title">Xiaomi Devices</div>
+                    <div class="stat-value text-xiaomi">{{ stats.xiaomi_devices }}</div>
+                </div>
+                <div class="stat-icon text-xiaomi"><i class="bi bi-router"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-title">Avg Latency</div>
+                    <div class="stat-value text-accent">{{ stats.avg_latency }} <small class="fs-6">ms</small></div>
+                </div>
+                <div class="stat-icon text-accent"><i class="bi bi-activity"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-white">Recent Devices</h4>
+                <a href="/devices" class="btn btn-sm btn-outline-info rounded-pill px-3">View All</a>
+            </div>
+            <div class="card-body px-0 pb-0">
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Vendor</th>
+                                <th>Hostname</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in devices[:5] %}
+                            <tr>
+                                <td class="fw-semibold text-accent">{{ device.ip }}</td>
+                                <td>
+                                    {% if 'Xiaomi' in device.vendor %}
+                                    <span class="badge badge-xiaomi">{{ device.vendor }}</span>
+                                    {% else %}
+                                    {{ device.vendor }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ device.hostname }}</td>
+                                <td>
+                                    {% if device.online == 1 %}
+                                    <span class="badge badge-online">Online</span>
+                                    {% else %}
+                                    <span class="badge badge-offline">Offline</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

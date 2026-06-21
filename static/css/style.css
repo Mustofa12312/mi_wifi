@@ -1,0 +1,181 @@
+:root {
+    --bg-dark: #0b0f19;
+    --card-bg: #141b2d;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border-color: #1e293b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --xiaomi: #ff6900;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Sidebar styling */
+.sidebar {
+    background-color: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+}
+
+.sidebar .nav-link {
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.sidebar .nav-link:hover, .sidebar .nav-link.active {
+    color: var(--accent);
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.sidebar .brand {
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    display: block;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* Main Content */
+.main-content {
+    padding: 2.5rem;
+    background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+}
+
+/* Stats Cards */
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    border-color: var(--accent);
+}
+
+.xiaomi-card:hover {
+    border-color: var(--xiaomi);
+}
+
+.stat-title {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.text-accent { color: var(--accent); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-xiaomi { color: var(--xiaomi); }
+
+/* Tables */
+.table-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.table-card .card-header {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+.table-custom {
+    color: var(--text-main);
+    width: 100%;
+}
+
+.table-custom th {
+    background: transparent;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 1rem 1.5rem;
+}
+
+.table-custom td {
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+    padding: 1rem 1.5rem;
+}
+
+.table-custom tr:last-child td {
+    border-bottom: none;
+}
+
+.table-custom tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-custom tbody tr:hover {
+    background-color: rgba(255,255,255,0.03);
+}
+
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.badge-online { background-color: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-offline { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+.badge-xiaomi { background-color: rgba(255, 105, 0, 0.15); color: var(--xiaomi); border: 1px solid rgba(255, 105, 0, 0.3); }
+
+.header-title {
+    font-weight: 700;
+    position: relative;
+    display: inline-block;
+    color: var(--text-main);
+}
+
+.btn-outline-info {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn-outline-info:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
