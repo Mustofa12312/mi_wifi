@@ -1,9 +1,12 @@
-from flask import Flask, render_template, jsonify, Response
-from database import init_db, get_db_connection
+from flask import Flask, render_template, jsonify, Response, request
+from database import init_db, get_db_connection, update_device_alias
 from reports.exporter import generate_devices_csv
 from security.scanner import scan_ports_and_os
 from automation.rules import run_automation_engine
 from observatory.sniffer import start_dns_sniffer
+from observatory.speed_monitor import run_speed_monitor_loop
+from automation.wol import send_magic_packet
+from xiaomi.miio_lab import discover_miio_devices
 import threading
 
 app = Flask(__name__)
@@ -43,6 +46,10 @@ def devices_page():
 from scanner import scan_network, run_scanner_loop
 from ping_monitor import run_ping_loop
 import threading
+
+@app.route('/xiaomi_lab')
+def xiaomi_lab_page():
+    return render_template('xiaomi_lab.html')
 
 @app.route('/api/scan')
 def api_scan():
@@ -86,6 +93,30 @@ def api_scan_ports(ip):
     result = scan_ports_and_os(ip)
     return jsonify(result)
 
+@app.route('/api/alias/<ip>', methods=['POST'])
+def set_device_alias(ip):
+    data = request.json
+    custom_name = data.get('custom_name', '')
+    update_device_alias(ip, custom_name)
+    return jsonify({"success": True, "message": "Alias updated"})
+
+@app.route('/api/wake/<mac>', methods=['POST'])
+def wake_device(mac):
+    success, msg = send_magic_packet(mac)
+    return jsonify({"success": success, "message": msg})
+
+@app.route('/api/speedtest_data')
+def api_speedtest_data():
+    conn = get_db_connection()
+    history = conn.execute('SELECT * FROM speedtest_history ORDER BY created_at DESC LIMIT 24').fetchall()
+    conn.close()
+    return jsonify([dict(h) for h in history])
+
+@app.route('/api/xiaomi_discover')
+def api_xiaomi_discover():
+    devices = discover_miio_devices()
+    return jsonify(devices)
+
 if __name__ == '__main__':
     # Start background tasks
     print("[*] Starting Background Scanner Thread...")
@@ -103,5 +134,9 @@ if __name__ == '__main__':
     print("[*] Starting DNS Observatory Thread...")
     dns_thread = threading.Thread(target=start_dns_sniffer, daemon=True)
     dns_thread.start()
+    
+    print("[*] Starting Speedtest Monitor Thread...")
+    speed_thread = threading.Thread(target=run_speed_monitor_loop, args=(1,), daemon=True) # every 1 hour
+    speed_thread.start()
     
     app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)

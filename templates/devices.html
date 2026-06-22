@@ -36,7 +36,14 @@
                                     {{ device.vendor }}
                                     {% endif %}
                                 </td>
-                                <td>{{ device.hostname }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span id="hostname-{{ device.ip | replace('.', '-') }}">
+                                            {{ device.custom_name if device.custom_name else (device.hostname or 'Unknown') }}
+                                        </span>
+                                        <button class="btn btn-sm text-accent ms-2" onclick="editAlias('{{ device.ip }}')"><i class="bi bi-pencil"></i></button>
+                                    </div>
+                                </td>
                                 <td class="text-muted small" id="os-{{ device.ip | replace('.', '-') }}">{{ device.os_type or 'Unknown' }}</td>
                                 <td class="text-muted small" id="ports-{{ device.ip | replace('.', '-') }}">{{ device.open_ports or 'None' }}</td>
                                 <td>
@@ -47,8 +54,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="scanDevice('{{ device.ip }}', this)">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 mb-1" onclick="scanDevice('{{ device.ip }}', this)">
                                         Deep Scan
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 mb-1" onclick="wakeDevice('{{ device.mac }}', this)">
+                                        Wake Up
                                     </button>
                                 </td>
                             </tr>
@@ -91,6 +101,32 @@ function scanDevice(ip, btn) {
             btn.innerHTML = originalText;
             btn.classList.remove('disabled');
         });
+}
+
+function wakeDevice(mac, btn) {
+    fetch(`/api/wake/${mac}`, {method: 'POST'})
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+        });
+}
+
+function editAlias(ip) {
+    const newName = prompt("Enter new name for this device:");
+    if (newName !== null) {
+        fetch(`/api/alias/${ip}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({custom_name: newName})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const ipSafe = ip.replace(/\./g, '-');
+                document.getElementById(`hostname-${ipSafe}`).innerText = newName;
+            }
+        });
+    }
 }
 </script>
 {% endblock %}
