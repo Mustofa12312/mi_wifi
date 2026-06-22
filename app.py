@@ -1,4 +1,7 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, Response
+from database import init_db, get_db_connection
+from reports.exporter import generate_devices_csv
+from security.scanner import scan_ports_and_os
 from database import init_db, get_db_connection
 
 app = Flask(__name__)
@@ -63,6 +66,23 @@ def api_ping():
     ''').fetchall()
     conn.close()
     return jsonify([dict(h) for h in history])
+
+@app.route('/api/export/devices.csv')
+def export_devices_csv():
+    csv_data = generate_devices_csv()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=devices_report.csv"}
+    )
+
+@app.route('/api/scan_ports/<ip>')
+def api_scan_ports(ip):
+    # Runs the advanced NMAP scan in the background, or blocking for now
+    # Since nmap might take time, we can run it asynchronously or blocking. 
+    # Let's run it blocking so the frontend can show the result immediately for this IP.
+    result = scan_ports_and_os(ip)
+    return jsonify(result)
 
 if __name__ == '__main__':
     # Start background tasks

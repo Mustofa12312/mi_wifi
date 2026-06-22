@@ -21,7 +21,9 @@ def init_db():
             hostname TEXT,
             first_seen DATETIME,
             last_seen DATETIME,
-            online INTEGER
+            online INTEGER,
+            os_type TEXT,
+            open_ports TEXT
         )
     ''')
     c.execute('''
@@ -34,6 +36,13 @@ def init_db():
         )
     ''')
     
+    # Simple Migration to add columns if they don't exist
+    try:
+        c.execute('ALTER TABLE devices ADD COLUMN os_type TEXT')
+        c.execute('ALTER TABLE devices ADD COLUMN open_ports TEXT')
+    except sqlite3.OperationalError:
+        pass # Columns already exist
+        
     # Set all devices offline on startup
     c.execute('UPDATE devices SET online = 0')
     
@@ -80,6 +89,13 @@ def set_all_offline():
     conn = get_db_connection()
     c = conn.cursor()
     c.execute('UPDATE devices SET online = 0')
+    conn.commit()
+    conn.close()
+
+def update_device_details(ip, os_type, open_ports):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('UPDATE devices SET os_type = ?, open_ports = ? WHERE ip = ?', (os_type, open_ports, ip))
     conn.commit()
     conn.close()
 
