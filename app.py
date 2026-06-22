@@ -2,7 +2,9 @@ from flask import Flask, render_template, jsonify, Response
 from database import init_db, get_db_connection
 from reports.exporter import generate_devices_csv
 from security.scanner import scan_ports_and_os
-from database import init_db, get_db_connection
+from automation.rules import run_automation_engine
+from observatory.sniffer import start_dns_sniffer
+import threading
 
 app = Flask(__name__)
 
@@ -93,5 +95,13 @@ if __name__ == '__main__':
     print("[*] Starting Background Ping Monitor Thread...")
     ping_thread = threading.Thread(target=run_ping_loop, args=(30,), daemon=True)
     ping_thread.start()
+    
+    print("[*] Starting Automation Engine Thread...")
+    auto_thread = threading.Thread(target=run_automation_engine, args=(30,), daemon=True)
+    auto_thread.start()
+    
+    print("[*] Starting DNS Observatory Thread...")
+    dns_thread = threading.Thread(target=start_dns_sniffer, daemon=True)
+    dns_thread.start()
     
     app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)
