@@ -35,16 +35,43 @@ def devices_page():
     conn.close()
     return render_template('devices.html', devices=devices)
 
+from scanner import scan_network, run_scanner_loop
+from ping_monitor import run_ping_loop
+import threading
+
 @app.route('/api/scan')
 def api_scan():
-    # Placeholder for actual scan
+    # Trigger a network scan in the background
+    threading.Thread(target=scan_network, daemon=True).start()
+    return jsonify({"message": "Scan triggered in background. Please wait a moment."})
+
+@app.route('/api/devices')
+def api_devices():
     conn = get_db_connection()
-    devices = conn.execute('SELECT ip, vendor, online as status FROM devices').fetchall()
+    devices = conn.execute('SELECT * FROM devices ORDER BY last_seen DESC').fetchall()
     conn.close()
-    result = [dict(d) for d in devices]
-    for d in result:
-        d['status'] = 'online' if d['status'] == 1 else 'offline'
-    return jsonify(result)
+    return jsonify([dict(d) for d in devices])
+
+@app.route('/api/ping')
+def api_ping():
+    conn = get_db_connection()
+    history = conn.execute('''
+        SELECT d.ip, d.hostname, p.latency, p.created_at 
+        FROM ping_history p 
+        JOIN devices d ON p.device_id = d.id 
+        ORDER BY p.created_at DESC LIMIT 50
+    ''').fetchall()
+    conn.close()
+    return jsonify([dict(h) for h in history])
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    # Start background tasks
+    print("[*] Starting Background Scanner Thread...")
+    scanner_thread = threading.Thread(target=run_scanner_loop, args=(60,), daemon=True)
+    scanner_thread.start()
+    
+    print("[*] Starting Background Ping Monitor Thread...")
+    ping_thread = threading.Thread(target=run_ping_loop, args=(30,), daemon=True)
+    ping_thread.start()
+    
+    app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)
