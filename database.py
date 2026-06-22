@@ -23,7 +23,8 @@ def init_db():
             last_seen DATETIME,
             online INTEGER,
             os_type TEXT,
-            open_ports TEXT
+            open_ports TEXT,
+            custom_name TEXT
         )
     ''')
     c.execute('''
@@ -36,10 +37,21 @@ def init_db():
         )
     ''')
     
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS speedtest_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            download REAL,
+            upload REAL,
+            ping REAL,
+            created_at DATETIME
+        )
+    ''')
+    
     # Simple Migration to add columns if they don't exist
     try:
         c.execute('ALTER TABLE devices ADD COLUMN os_type TEXT')
         c.execute('ALTER TABLE devices ADD COLUMN open_ports TEXT')
+        c.execute('ALTER TABLE devices ADD COLUMN custom_name TEXT')
     except sqlite3.OperationalError:
         pass # Columns already exist
         
@@ -99,6 +111,21 @@ def update_device_details(ip, os_type, open_ports):
     conn.commit()
     conn.close()
 
+
+def update_device_alias(ip, custom_name):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('UPDATE devices SET custom_name = ? WHERE ip = ?', (custom_name, ip))
+    conn.commit()
+    conn.close()
+
+def add_speedtest_record(download, upload, ping):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('INSERT INTO speedtest_history (download, upload, ping, created_at) VALUES (?, ?, ?, ?)',
+              (download, upload, ping, datetime.now()))
+    conn.commit()
+    conn.close()
 
 if __name__ == '__main__':
     init_db()
