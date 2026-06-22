@@ -31,6 +31,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/topology' %}active{% endif %}" href="/topology">
+                            <i class="bi bi-diagram-3 me-2"></i> Topology Map
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.path == '/xiaomi_lab' %}active{% endif %}" href="/xiaomi_lab">
                             <i class="bi bi-box-seam me-2"></i> Xiaomi Lab
                         </a>

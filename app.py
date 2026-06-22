@@ -6,6 +6,7 @@ from automation.rules import run_automation_engine
 from observatory.sniffer import start_dns_sniffer
 from observatory.speed_monitor import run_speed_monitor_loop
 from automation.wol import send_magic_packet
+from automation.cleanup import clean_old_records
 from xiaomi.miio_lab import discover_miio_devices
 import threading
 
@@ -50,6 +51,10 @@ import threading
 @app.route('/xiaomi_lab')
 def xiaomi_lab_page():
     return render_template('xiaomi_lab.html')
+
+@app.route('/topology')
+def topology_page():
+    return render_template('topology.html')
 
 @app.route('/api/scan')
 def api_scan():
@@ -117,7 +122,36 @@ def api_xiaomi_discover():
     devices = discover_miio_devices()
     return jsonify(devices)
 
+@app.route('/api/topology_data')
+def api_topology_data():
+    conn = get_db_connection()
+    devices = conn.execute('SELECT * FROM devices WHERE online = 1').fetchall()
+    conn.close()
+    
+    nodes = [
+        {"id": 0, "label": "Gateway / Router", "group": "gateway"}
+    ]
+    edges = []
+    
+    for dev in devices:
+        node_id = dev['id']
+        name = dev['custom_name'] if dev['custom_name'] else (dev['hostname'] or dev['ip'])
+        
+        group = 'device'
+        if dev['vendor'] and 'Xiaomi' in dev['vendor']:
+            group = 'xiaomi'
+        elif dev['os_type'] and 'Linux' in dev['os_type']:
+            group = 'server'
+            
+        nodes.append({"id": node_id, "label": name, "group": group})
+        edges.append({"from": 0, "to": node_id})
+        
+    return jsonify({"nodes": nodes, "edges": edges})
+
 if __name__ == '__main__':
+    # Auto-cleanup old database records
+    clean_old_records(30)
+    
     # Start background tasks
     print("[*] Starting Background Scanner Thread...")
     scanner_thread = threading.Thread(target=run_scanner_loop, args=(60,), daemon=True)
