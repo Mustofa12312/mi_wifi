@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="header-title mb-0">Xiaomi MiIO Lab <i class="bi bi-flask text-xiaomi ms-2"></i></h2>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-body p-5 text-center">
+                <i class="bi bi-cpu text-xiaomi" style="font-size: 4rem; opacity: 0.8"></i>
+                <h4 class="text-white mt-3">MiIO Device Interrogation</h4>
+                <p class="text-muted mb-4">
+                    Send a UDP broadcast discovery probe to find Xiaomi Smart Devices on your network and extract their Tokens (if exposed) and Product IDs.
+                </p>
+                
+                <button id="btnDiscover" class="btn btn-outline-xiaomi rounded-pill px-5 py-2" style="border-color: #ff6900; color: #ff6900;" onclick="discoverXiaomi()">
+                    Start Discovery Probe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 d-none" id="resultArea">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-header border-bottom border-secondary">
+                <h5 class="mb-0 text-white">Discovery Results</h5>
+            </div>
+            <div class="card-body px-0 pb-0">
+                <div class="table-responsive">
+                    <table class="table table-custom table-borderless mb-0" id="xiaomiTable">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>MAC Address</th>
+                                <th>Product Model</th>
+                                <th>Raw Token</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Results will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function discoverXiaomi() {
+    const btn = document.getElementById('btnDiscover');
+    const resultArea = document.getElementById('resultArea');
+    const tbody = document.querySelector('#xiaomiTable tbody');
+    
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Probing...';
+    btn.classList.add('disabled');
+    
+    fetch('/api/xiaomi_discover')
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = 'Probe Complete';
+            btn.classList.remove('disabled');
+            
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No Xiaomi devices responded to the discovery probe.</td></tr>';
+            } else {
+                data.forEach(dev => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-semibold text-accent">${dev.ip}</td>
+                            <td class="font-monospace text-muted small">${dev.mac}</td>
+                            <td><span class="badge badge-xiaomi">${dev.product || 'Unknown Xiaomi Device'}</span></td>
+                            <td class="font-monospace text-warning small" style="word-break: break-all;">${dev.token}</td>
+                        </tr>
+                    `;
+                });
+            }
+            resultArea.classList.remove('d-none');
+            
+            setTimeout(() => {
+                btn.innerHTML = 'Start Discovery Probe';
+            }, 3000);
+        })
+        .catch(err => {
+            alert('Discovery failed');
+            btn.innerHTML = 'Start Discovery Probe';
+            btn.classList.remove('disabled');
+        });
+}
+</script>
+{% endblock %}
