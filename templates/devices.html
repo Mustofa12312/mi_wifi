@@ -3,6 +3,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="header-title mb-0">All Network Devices</h2>
+    <a href="/api/export/devices.csv" class="btn btn-outline-info rounded-pill px-4">
+        <i class="bi bi-download me-2"></i> Export CSV
+    </a>
 </div>
 
 <div class="row mt-4">
@@ -12,18 +15,18 @@
                 <div class="table-responsive">
                     <table class="table table-custom table-borderless mb-0">
                         <thead>
-                            <tr>
                                 <th>IP Address</th>
                                 <th>MAC Address</th>
                                 <th>Vendor</th>
                                 <th>Hostname</th>
-                                <th>First Seen</th>
+                                <th>OS Type</th>
+                                <th>Open Ports</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for device in devices %}
-                            <tr>
                                 <td class="fw-semibold text-accent">{{ device.ip }}</td>
                                 <td class="text-muted font-monospace small">{{ device.mac }}</td>
                                 <td>
@@ -34,13 +37,19 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ device.hostname }}</td>
-                                <td class="text-muted small">{{ device.first_seen }}</td>
+                                <td class="text-muted small" id="os-{{ device.ip | replace('.', '-') }}">{{ device.os_type or 'Unknown' }}</td>
+                                <td class="text-muted small" id="ports-{{ device.ip | replace('.', '-') }}">{{ device.open_ports or 'None' }}</td>
                                 <td>
                                     {% if device.online == 1 %}
                                     <span class="badge badge-online">Online</span>
                                     {% else %}
                                     <span class="badge badge-offline">Offline</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="scanDevice('{{ device.ip }}', this)">
+                                        Deep Scan
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -51,4 +60,37 @@
         </div>
     </div>
 </div>
+
+<script>
+function scanDevice(ip, btn) {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Scanning...';
+    btn.classList.add('disabled');
+    
+    fetch(`/api/scan_ports/${ip}`)
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = 'Scan Complete';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            if (!data.error) {
+                const ipSafe = ip.replace(/\./g, '-');
+                document.getElementById(`os-${ipSafe}`).innerText = data.os_type;
+                document.getElementById(`ports-${ipSafe}`).innerText = data.open_ports;
+            }
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success', 'disabled');
+                btn.classList.add('btn-outline-primary');
+            }, 3000);
+        })
+        .catch(err => {
+            alert('Scan failed');
+            btn.innerHTML = originalText;
+            btn.classList.remove('disabled');
+        });
+}
+</script>
 {% endblock %}
