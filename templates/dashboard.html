@@ -57,8 +57,8 @@
 </div>
 
 <div class="row mt-5">
-    <div class="col-12">
-        <div class="card table-card">
+    <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="card table-card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0 text-white">Recent Devices</h4>
                 <a href="/devices" class="btn btn-sm btn-outline-info rounded-pill px-3">View All</a>
@@ -101,5 +101,144 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-lg-4">
+        <div class="card table-card h-100">
+            <div class="card-header">
+                <h5 class="mb-0 text-white">Live Ping Latency</h5>
+            </div>
+            <div class="card-body p-3">
+                <canvas id="pingChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Chart
+    const ctx = document.getElementById('pingChart').getContext('2d');
+    
+    // Set Chart.js defaults for dark theme
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+    
+    const pingChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Avg Latency (ms)',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointBackgroundColor: '#3b82f6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { maxTicksLimit: 10 }
+                }
+            },
+            animation: { duration: 0 } // Disable animation for smoother live updates
+        }
+    });
+
+    // Auto Refresh Logic
+    function refreshData() {
+        // Fetch Devices
+        fetch('/api/devices')
+            .then(res => res.json())
+            .then(devices => {
+                let onlineCount = 0;
+                let xiaomiCount = 0;
+                let tbodyHtml = '';
+                
+                devices.forEach(device => {
+                    if(device.online === 1) onlineCount++;
+                    if(device.vendor && device.vendor.includes('Xiaomi')) xiaomiCount++;
+                    
+                    // Rebuild table rows (max 5 for dashboard)
+                    if(tbodyHtml.split('<tr>').length - 1 < 5) {
+                        let vendorBadge = device.vendor && device.vendor.includes('Xiaomi') 
+                            ? `<span class="badge badge-xiaomi">${device.vendor}</span>` 
+                            : device.vendor;
+                            
+                        let statusBadge = device.online === 1 
+                            ? '<span class="badge badge-online">Online</span>' 
+                            : '<span class="badge badge-offline">Offline</span>';
+                            
+                        tbodyHtml += `
+                            <tr>
+                                <td class="fw-semibold text-accent">${device.ip}</td>
+                                <td>${vendorBadge}</td>
+                                <td>${device.hostname || 'Unknown'}</td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                // Update Top Stats
+                document.querySelector('.stat-value.text-success').textContent = onlineCount;
+                document.querySelector('.stat-value.text-danger').textContent = devices.length - onlineCount;
+                document.querySelector('.stat-value.text-xiaomi').textContent = xiaomiCount;
+                
+                // Update Table
+                document.querySelector('.table-custom tbody').innerHTML = tbodyHtml;
+            });
+            
+        // Fetch Ping History
+        fetch('/api/ping')
+            .then(res => res.json())
+            .then(history => {
+                // history is sorted desc. Let's group by created_at or just take the latest average
+                if(history.length === 0) return;
+                
+                // For simplicity, we just take the last 20 unique timestamps and avg their latency
+                let timeMap = {};
+                history.forEach(h => {
+                    let time = h.created_at.split(' ')[1].substring(0, 5); // get HH:MM
+                    if(!timeMap[time]) {
+                        timeMap[time] = { sum: 0, count: 0 };
+                    }
+                    timeMap[time].sum += h.latency;
+                    timeMap[time].count++;
+                });
+                
+                let labels = Object.keys(timeMap).sort().slice(-15);
+                let data = labels.map(t => (timeMap[t].sum / timeMap[t].count).toFixed(1));
+                
+                // Update Chart
+                pingChart.data.labels = labels;
+                pingChart.data.datasets[0].data = data;
+                pingChart.update();
+                
+                // Update Top Stat Average (latest)
+                if(data.length > 0) {
+                    document.querySelector('.stat-value.text-accent').innerHTML = `${data[data.length-1]} <small class="fs-6">ms</small>`;
+                }
+            });
+    }
+
+    // Refresh every 5 seconds
+    setInterval(refreshData, 5000);
+    refreshData(); // initial fetch
+});
+</script>
 {% endblock %}

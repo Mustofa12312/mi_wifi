@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container-fluid p-0">
@@ -46,11 +48,25 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function scanNetwork() {
-            alert('Scanning network... (Feature to be implemented with real scanner)');
-            fetch('/api/scan').then(res => res.json()).then(data => {
-                console.log(data);
-                location.reload();
-            });
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Scanning...';
+            btn.classList.add('disabled');
+            
+            fetch('/api/scan')
+                .then(res => res.json())
+                .then(data => {
+                    // It will be picked up by the auto-refresh in dashboard, 
+                    // but we can restore the button after a few seconds
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.remove('disabled');
+                    }, 5000);
+                })
+                .catch(err => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('disabled');
+                });
         }
     </script>
 </body>

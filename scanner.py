@@ -3,10 +3,16 @@ import re
 import time
 from database import update_device, set_all_offline
 
-def get_vendor(mac):
+from xiaomi.detector import probe_miio_port
+
+def get_vendor(mac, ip):
     mac = mac.upper()
+    
+    # Active UDP Probe for Xiaomi IoT
+    if probe_miio_port(ip):
+        return 'Xiaomi Smart Device (MiIO)'
+        
     # Simple offline vendor detection based on MAC prefix
-    # Real app would use a MAC vendor API or larger OUI list
     if mac.startswith('4C:C6:4C') or mac.startswith('64:09:80') or mac.startswith('50:D2:F5'):
         return 'Xiaomi'
     if mac.startswith('00:1A:2B') or mac.startswith('DC:A6:32'):
@@ -39,7 +45,7 @@ def scan_network(subnet="192.168.1.0/24"):
                 hostname = match.group('hostname') if match.group('hostname') != '?' else 'Unknown'
                 ip = match.group('ip')
                 mac = match.group('mac').upper()
-                vendor = get_vendor(mac)
+                vendor = get_vendor(mac, ip)
                 
                 # Exclude broadcast
                 if mac == 'FF:FF:FF:FF:FF:FF' or ip.endswith('.255'):
